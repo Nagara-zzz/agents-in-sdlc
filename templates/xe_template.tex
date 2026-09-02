@@ -1,0 +1,33 @@
+\documentclass[11pt]{article}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setmainfont{Times New Roman}
+\setCJKmainfont{Noto Serif CJK SC}
+\usepackage{geometry}
+\geometry{a4paper,margin=1in}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{microtype}
+\usepackage{hyperref}
+
+% Pandoc metadata blocks
+$if(title)$
+\title{$title$}
+$endif$
+$if(author)$
+\author{$for(author)$$author$$sep$ \and $endfor$}
+$endif$
+$if(date)$
+\date{$date$}
+$else$
+\date{}
+$endif$
+
+\begin{document}
+
+$if(title)$\maketitle
+$endif$
+
+$body$
+
+\end{document}

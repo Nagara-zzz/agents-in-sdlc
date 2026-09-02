@@ -1,0 +1,72 @@
+name: LaTeX build
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+  workflow_dispatch:
+    inputs:
+      main_file:
+        description: '主 TeX 文件（仓库相对路径），例如 docs/main.tex 或 main.tex'
+        required: false
+        default: 'main.tex'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install TeX Live (full subset)
+      uses: dante-ev/texlive-action@v2
+      with:
+        # 安装常用集合和 xetex 支持以及 biber
+        extra_packages: |
+          collection-latexrecommended
+          collection-fontsrecommended
+          collection-xetex
+          biber
+
+    - name: Compile with XeLaTeX and biber
+      shell: bash
+      run: |
+        set -euo pipefail
+        MAIN=${{ github.event.inputs.main_file || github.event.inputs.main_file && github.event.inputs.main_file || 'main.tex' }}
+        # Allow overriding via workflow_dispatch input or environment
+        if [ -n "${{ github.event.inputs.main_file }}" ]; then
+          MAIN="${{ github.event.inputs.main_file }}"
+        fi
+        echo "Using main file: $MAIN"
+        if [ ! -f "$MAIN" ]; then
+          echo "Error: main file not found: $MAIN" >&2
+          ls -la
+          exit 1
+        fi
+        DIR=$(dirname "$MAIN")
+        BASE=$(basename "$MAIN")
+        STEM=${BASE%.*}
+        cd "$DIR" || exit 1
+
+        # Run xelatex -> biber (if any .bib) -> xelatex x2
+        xelatex -interaction=nonstopmode -halt-on-error "$BASE"
+        if ls *.bib >/dev/null 2>&1; then
+          biber "$STEM" || true
+        fi
+        xelatex -interaction=nonstopmode -halt-on-error "$BASE"
+        xelatex -interaction=nonstopmode -halt-on-error "$BASE"
+
+        mkdir -p "$GITHUB_WORKSPACE/latex-artifacts"
+        if [ -f "$STEM.pdf" ]; then
+          mv "$STEM.pdf" "$GITHUB_WORKSPACE/latex-artifacts/"
+        fi
+        # Collect logs and important aux files
+        cp -v *.log *.aux *.bbl *.blg  "$GITHUB_WORKSPACE/latex-artifacts/" 2>/dev/null || true
+
+    - name: Upload PDF and logs
+      uses: actions/upload-artifact@v4
+      with:
+        name: latex-output
+        path: latex-artifacts/**

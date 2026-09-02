@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "overleaf-local"
+version = "0.1.0"
+description = "本地 Overleaf 风格的 LaTeX 编译命令行工具（XeLaTeX + biber 支持）"
+readme = "README_OVERLEAF_LOCAL.md"
+authors = [ { name = "Your Name" } ]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+
+[project.entry-points.console_scripts]
+overleaf-local = "overleaf_local_cli:main"
